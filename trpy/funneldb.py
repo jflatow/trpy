@@ -233,8 +233,11 @@ class FDBSimpleSet(FDBSet):
 
     @classmethod
     def parse(cls, db, string):
-        key, mask = string.split('/') if '/' in string else (string, '')
-        return cls(db, db.funnel_id(key), FDBCNF(Q.parse(mask, ext=True), db.mask_val))
+        try:
+            key, mask = string.split('/') if '/' in string else (string, '')
+            return cls(db, db.funnel_id(key), FDBCNF(Q.parse(mask, ext=True), db.mask_val))
+        except KeyError:
+            return FDBComplexSet(db, [], None)
 
 class FDBComplexSet(FDBSet):
     def __init__(self, db, sets, cnf):
@@ -243,7 +246,7 @@ class FDBComplexSet(FDBSet):
         self._set[0].complex.db = db._db
         self._set[0].complex.num_sets = len(sets)
         self._set[0].complex.sets = self._sets = ffi.new('fdb_set *[]', [s._set for s in sets])
-        self._set[0].complex.cnf = cnf._cnf
+        self._set[0].complex.cnf = cnf._cnf if cnf else ffi.NULL
         self.db = db
         self.sets = sets
         self.cnf = cnf
@@ -265,9 +268,12 @@ class FDBFamily(object):
         self.cnfs = cnfs
 
     def counts(self, key):
-        self._family[0].funnel_id = self.db.funnel_id(key)
-        lib.fdb_count_family(self._family, self._counts)
-        return tuple(self._counts)
+        try:
+            self._family[0].funnel_id = self.db.funnel_id(key)
+            lib.fdb_count_family(self._family, self._counts)
+            return tuple(self._counts)
+        except KeyError:
+            return (0, ) * len(self.cnfs)
 
     @classmethod
     def parse(cls, db, strings):
