@@ -53,9 +53,9 @@
 /* The total size of a database */
 #define fdb_size(N, S) ((size_t)(fdb_offs(N) + S))
 
-typedef uint32_t fdb_eid; /* max element id is 32 bits */
-typedef uint32_t fdb_fid; /* max funnel id is 32 bits */
-typedef uint8_t fdb_mask; /* max mask is 8 bits */
+typedef uint32_t fdb_eid;  /* max element id is 32 bits */
+typedef uint32_t fdb_fid;  /* max funnel id is 32 bits */
+typedef uint16_t fdb_mask; /* max mask is 16 bits */
 
 typedef struct {
   fdb_eid id;

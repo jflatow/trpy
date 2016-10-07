@@ -128,7 +128,7 @@ FDB_EZ_MAX = 128
 ffic.cdef('''
    typedef uint32_t fdb_eid;
    typedef uint32_t fdb_fid;
-   typedef uint8_t fdb_mask;
+   typedef uint16_t fdb_mask;
 
    typedef struct fdb_cons fdb_cons;
    typedef struct fdb_iter fdb_iter;

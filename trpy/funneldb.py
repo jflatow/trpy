@@ -130,7 +130,7 @@ class FDB(object):
             mask_arity = tdb.lexicon_size(mask_field)
             if mask_arity < 1:
                 raise ValueError("Mask field has no values")
-            if mask_arity > 8:
+            if mask_arity > 16:
                 raise ValueError("Mask field cardinality is too high")
         params = ffi.new('fdb_ez []', 1)
         params[0].num_keys = len(keys)
