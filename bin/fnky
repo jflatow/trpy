@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
- fnky make FUNNELDB [-k KEY-FIELDS ...] [-m MASK-FIELD]
+ fnky make FUNNELDB [-K KEY-FIELDS ...] [-M MASK-FIELD]
  fnky keys FUNNELDB
  fnky size FUNNELDB
  fnky count FUNNELDB [-q QUERY]
@@ -19,8 +19,8 @@ def size(tdb, path, opts):
     print(len(FDB.load(tdb, open(path))))
 
 def make(tdb, path, opts):
-    keys = opts.key or ('')
-    mask = opts.mask or []
+    keys = opts.key_field or ('')
+    mask = opts.mask_field or []
     fdb = FDB.make(tdb,
                    keys=[filter(None, k.split(',')) for k in keys or ()],
                    mask_field=tdb.fields.index(mask[0]) if mask else 1)
@@ -33,7 +33,10 @@ def keys(tdb, path, opts):
 
 def count_families(tdb, path, opts):
     fdb = FDB.load(tdb, open(path))
-    keys = opts.key or list(fdb.keys(serialize=True))
+    if opts.key_field:
+        keys = ['%s=%s' % (k, v) for k in opts.key_field for v in tdb.lexicon(k)]
+    else:
+        keys = opts.key or list(fdb.keys(serialize=True))
     masks = ['' if m == '*' else m for m in opts.mask or ['']]
     family = fdb.family(masks)
     print('%-50s\t%s' % ('funnel', '\t'.join('%12s' % (m or '*') for m in masks)))
@@ -57,10 +60,16 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-k', '--key',
                         action='append',
-                        help="funnel key or key-field to include")
+                        help="funnel key to include")
+    parser.add_argument('-K', '--key-field',
+                        action='append',
+                        help="funnel key-field to include")
     parser.add_argument('-m', '--mask',
                         action='append',
-                        help="mask field or filter to apply")
+                        help="mask filter to apply")
+    parser.add_argument('-M', '--mask-field',
+                        action='append',
+                        help="mask field to use")
     parser.add_argument('-q', '--query',
                         action='append',
                         help="query to produce a set")
