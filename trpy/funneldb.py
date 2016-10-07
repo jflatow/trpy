@@ -253,9 +253,9 @@ class FDBComplexSet(FDBSet):
 
     @classmethod
     def parse(cls, db, string):
-        q = Q.parse(string).replace(lambda t: FDBSimpleSet.parse(db, t))
-        sets = list(set(l.term for c in q.clauses for l in c.literals))
-        return cls(db, sets, FDBCNF(q, sets.index))
+        import re
+        return eval(re.sub(r'([^&|\^\*\+\-()\s][^&|\^\*\+\-()]*)',
+                           r'FDBSimpleSet.parse(db, """\1""".strip())', string))
 
 class FDBFamily(object):
     def __init__(self, db, cnfs):
