@@ -6,7 +6,7 @@ setup(name='trpy',
       author='Jared Flatow',
       author_email='jared.flatow@adroll.com',
       packages=['trpy'],
-      scripts=['bin/trpy'],
-      cffi_modules=["trpy/__ffic__.py:ffic"],
-      setup_requires=["cffi>=1.0.0"],
-      install_requires=["cffi>=1.0.0"])
+      scripts=['bin/trpy', 'bin/fnky'],
+      cffi_modules=['trpy/__ffic__.py:ffic'],
+      setup_requires=['cffi>=1.0.0'],
+      install_requires=['cffi>=1.0.0'])

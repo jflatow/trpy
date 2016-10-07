@@ -7,7 +7,6 @@
  trpy merge TRAILDB ... [-o OUTDB]
 """
 
-import os
 import sys
 import argparse
 import datetime
@@ -29,12 +28,7 @@ def iformatter(tdb, opts):
     return lambda i: i
 
 def qparse(query):
-    q = Q.parse(query)
-    for clause in q.clauses:
-        for literal in clause.literals:
-            if isinstance(literal.term, basestring):
-                literal.term = tuple(literal.term.split('=', 1))
-    return q
+    return Q.parse(query).replace(lambda t: tuple(t.split('=', 1)) if isinstance(t, basestring) else t)
 
 def help():
     print(__doc__)
@@ -44,21 +38,21 @@ def info(args, opts):
         tdb = TDB(arg)
         tmin, tmax = tdb.time_range()
         tformat = tformatter(opts)
-        print '%s' % arg
-        print ' # trails:                    %12d' % tdb.num_trails
-        print ' # events:                    %12d' % tdb.num_events
-        print ' # fields:                    %12d' % tdb.num_fields
+        print('%s' % arg)
+        print(' # trails:                    %12d' % tdb.num_trails)
+        print(' # events:                    %12d' % tdb.num_events)
+        print(' # fields:                    %12d' % tdb.num_fields)
         for f in tdb.fields[1:]:
-            print ' #  %-25s %12d' % (f + ':', tdb.lexicon_size(f))
-        print u' \u2265 time:               %s' % tformat(tmin)
-        print u' \u2264 time:               %s' % tformat(tmax)
+            print(' #  %-25s %12d' % (f + ':', tdb.lexicon_size(f)))
+        print(u' \u2265 time:               %s' % tformat(tmin))
+        print(u' \u2264 time:               %s' % tformat(tmax))
 
 def words(args, opts):
     for arg in args:
         tdb = TDB(arg)
         for field in opts.field or tdb.fields[1:]:
             for value in tdb.lexicon(field):
-                print '%s\t%s' % (field, value)
+                print('%s\t%s' % (field, value))
 
 def match(args, opts):
     for arg in args:
@@ -68,10 +62,10 @@ def match(args, opts):
         tformat = tformatter(opts)
         query = qparse(opts.query) if opts.query else None
         if opts.header:
-            print '%s\t%s\t%s' % ('cookie' if opts.cookie else 'id', 'time', tabify(fields))
+            print('%s\t%s\t%s' % ('cookie' if opts.cookie else 'id', 'time', tabify(fields)))
         for id, trail in itertools.islice(tdb.match(query=query, expand=opts.expand), opts.n or None):
             for event in trail:
-                print '%s\t%s\t%s' % (iformat(id), tformat(event.time), tabify(getattr(event, f) for f in fields))
+                print('%s\t%s\t%s' % (iformat(id), tformat(event.time), tabify(getattr(event, f) for f in fields)))
 
 def trail(args, opts):
     for arg in args:
@@ -79,12 +73,12 @@ def trail(args, opts):
         fields = opts.field or tdb.fields[1:]
         tformat = tformatter(opts)
         if opts.header:
-            print '%s\t%s\t%s' % ('cookie' if opts.cookie else 'id', 'time', tabify(fields))
+            print('%s\t%s\t%s' % ('cookie' if opts.cookie else 'id', 'time', tabify(fields)))
         for id in opts.id or [0]:
             id = int(id)
             cookie = tdb.cookie(id)
             for event in tdb.trail(id, expand=opts.expand):
-                print '%s\t%s\t%s' % (cookie, tformat(event.time), tabify(getattr(event, f) for f in fields))
+                print('%s\t%s\t%s' % (cookie, tformat(event.time), tabify(getattr(event, f) for f in fields)))
 
 def merge(args, opts):
     for n, arg in enumerate(args):

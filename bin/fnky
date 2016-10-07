@@ -1,0 +1,79 @@
+#!/usr/bin/env python
+"""
+ fnky make FUNNELDB [-k KEY-FIELDS ...] [-m MASK-FIELD]
+ fnky keys FUNNELDB
+ fnky size FUNNELDB
+ fnky count FUNNELDB [-q QUERY]
+ fnky count FUNNELDB [-k KEY ...] [-m MASK ...]
+"""
+
+import sys
+import argparse
+
+from trpy import TDB, FDB
+
+def help():
+    print(__doc__)
+
+def size(tdb, path, opts):
+    print(len(FDB.load(tdb, open(path))))
+
+def make(tdb, path, opts):
+    keys = opts.key or ('')
+    mask = opts.mask or []
+    fdb = FDB.make(tdb,
+                   keys=[filter(None, k.split(',')) for k in keys or ()],
+                   mask_field=tdb.fields.index(mask[0]) if mask else 1)
+    fdb.dump(open(path, 'w'))
+
+def keys(tdb, path, opts):
+    fdb = FDB.load(tdb, open(path))
+    for key in fdb.keys(serialize=True):
+        print(key)
+
+def count_families(tdb, path, opts):
+    fdb = FDB.load(tdb, open(path))
+    keys = opts.key or list(fdb.keys(serialize=True))
+    masks = ['' if m == '*' else m for m in opts.mask or ['']]
+    family = fdb.family(masks)
+    print('%-50s\t%s' % ('funnel', '\t'.join('%12s' % (m or '*') for m in masks)))
+    for key in keys:
+        print('%-50s\t%s' % (key, '\t'.join('%12d' % c for c in family.counts(key))))
+
+def count_sets(tdb, path, opts):
+    fdb = FDB.load(tdb, open(path))
+    print('%-50s\t%12s' % ('query', '#'))
+    for query in opts.query or [None]:
+        print('%-50s\t%12d' % (query, len(fdb.query(query))))
+
+def count(tdb, path, opts):
+    if opts.query:
+        count_sets(tdb, path, opts)
+    else:
+        count_families(tdb, path, opts)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-k', '--key',
+                        action='append',
+                        help="funnel key or key-field to include")
+    parser.add_argument('-m', '--mask',
+                        action='append',
+                        help="mask field or filter to apply")
+    parser.add_argument('-q', '--query',
+                        action='append',
+                        help="query to produce a set")
+    parser.add_argument('-t', '--traildb',
+                        help="the path of the traildb")
+    opts, args = parser.parse_known_args(sys.argv[1:])
+    cmd, args = args[0] if args else 'help', args[1:]
+    if cmd == 'help':
+        return help()
+    path = args[0] if args else 'a.fdb'
+    path = path if path.endswith('.fdb') else path + '.fdb'
+    tdb = TDB(opts.traildb or path[:-4] + '.tdb')
+    return eval(cmd)(tdb, path, opts)
+
+if __name__ == '__main__':
+    main()

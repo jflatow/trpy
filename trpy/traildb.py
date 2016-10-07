@@ -71,18 +71,18 @@ class TDBCons(object):
         l = ffi.new('uint64_t []', [len(v) for v in values])
         f = lib.tdb_cons_add(self._cons, raw_cookie(cookie), timestamp, b, l)
         if f:
-            raise TDBError("TOo many values: %s" % values[f])
+            raise TDBError("Too many values: %s" % values[f])
 
     def append(self, db):
         f = lib.tdb_cons_append(self._cons, db._db)
         if f < 0:
-            raise TrailDBError("Wrong number of fields: %d" % db.num_fields)
+            raise TDBError("Wrong number of fields: %d" % db.num_fields)
         if f > 0:
-            raise TrailDBError("Too many values: %s" % values[f])
+            raise TDBError("Too many values: %s" % values[f])
 
     def finalize(self):
         e = lib.tdb_cons_finalize(self._cons)
-        if r:
+        if e:
             raise TDBError("Could not finalize (%d)" % e)
         return TDB(self.path)
 
@@ -137,8 +137,19 @@ class TDB(object):
 
     def field(self, fieldish):
         if isinstance(fieldish, basestring):
-            return self.fields.index(fieldish)
+            try:
+                return self.fields.index(fieldish)
+            except ValueError:
+                raise KeyError("No such field: '%s'" % fieldish)
         return fieldish
+
+    def field_name(self, fieldish):
+        if isinstance(fieldish, basestring):
+            return fieldish
+        try:
+            return self.fields[fieldish]
+        except IndexError:
+            raise IndexError("No such field: '%s'" % fieldish)
 
     def lexicon(self, fieldish):
         field = self.field(fieldish)
@@ -147,28 +158,29 @@ class TDB(object):
     def lexicon_size(self, fieldish):
         field = self.field(fieldish)
         value = lib.tdb_lexicon_size(self._db, field)
-        if not value:
-            raise TDBError("Invalid field index")
         return value
 
     def lexicon_word(self, fieldish, val):
         field = self.field(fieldish)
         value = lib.tdb_get_value(self._db, field, val, self._ui64p)
         if value is None:
-            raise TrailDBError("Error reading value")
+            raise IndexError("Field '%s' has no such value: '%s'", (self.field_name(fieldish), val))
         return ffi.string(value, self._ui64p[0])
+
+    def lexicon_val(self, fieldish, value):
+        return item_val(self.item(fieldish, value))
 
     def item(self, fieldish, value):
         field = self.field(fieldish)
         item = lib.tdb_get_item(self._db, field, value, len(value))
         if not item:
-            raise TrailDBError("No such value: '%s'" % value)
+            raise KeyError("Field '%s' has no such value: '%s'" % (self.field_name(fieldish), value))
         return item
 
     def item_value(self, item):
         value = lib.tdb_get_item_value(self._db, item, self._ui64p)
         if value is None:
-            raise TrailDBError("Error reading value")
+            raise ValueError("Bad item")
         return ffi.string(value, self._ui64p[0])
 
     def cookie(self, id):
@@ -198,11 +210,13 @@ class TDBIter(object):
             lib.tdb_iter_free(self._iter)
 
     def __iter__(self):
-        while True:
-            i = lib.tdb_iter_next(self._iter)
-            if not i:
-                raise StopIteration()
-            yield i.marker - 1, list(events(i.cursor, self.evify))
+        return self
+
+    def next(self):
+        i = lib.tdb_iter_next(self._iter)
+        if not i:
+            raise StopIteration()
+        return i.marker - 1, list(events(i.cursor, self.evify))
 
 class TDBCursor(object):
     def __init__(self, db, **kwds):
@@ -229,7 +243,7 @@ class TDBFilter(object):
             if i > 0:
                 e = lib.tdb_event_filter_new_clause(self._filter)
                 if e:
-                    raise TrailDBError("Failed to create clause", e)
+                    raise TDBError("Failed to create clause", e)
             for literal in clause.literals:
                 fieldish, value = literal.term
                 field = db.field(fieldish)

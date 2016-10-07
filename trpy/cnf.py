@@ -1,16 +1,20 @@
 from operator import __and__, __or__
 
-def noneOf(**disj):
-    return Q([Clause([Literal((k, v), True) for k, vs in disj.items() for v in vs])])
+def noneOf(*args, **kwds):
+    return Q([Clause([Literal((k, v), True) for k, vs in kwds.items() for v in vs] +
+                     [Literal(a, True) for a in args])])
 
-def oneOf(**disj):
-    return Q([Clause([Literal((k, v)) for k, vs in disj.items() for v in vs])])
+def oneOf(*args, **kwds):
+    return Q([Clause([Literal((k, v)) for k, vs in kwds.items() for v in vs] +
+                     [Literal(a) for a in args])])
 
-def where(**conj):
-    return Q([Clause([Literal(i)]) for i in conj.items()])
+def where(*args, **kwds):
+    return Q([Clause([Literal(i)]) for i in kwds.items()] +
+             [Clause([Literal(a)]) for a in args])
 
-def whereNot(**conj):
-    return Q([Clause([Literal(i, True)]) for i in conj.items()])
+def whereNot(*args, **kwds):
+    return Q([Clause([Literal(i, True)]) for i in kwds.items()] +
+             [Clause([Literal(a, True)]) for a in args])
 
 class Q(object):
     def __init__(self, clauses):
@@ -43,6 +47,12 @@ class Q(object):
     def __str__(self):
         format = '(%s)' if len(self.clauses) > 1 else '%s'
         return ' & '.join(format % c for c in self.clauses)
+
+    def replace(self, fun):
+        for clause in self.clauses:
+            for literal in clause.literals:
+                literal.term = fun(literal.term)
+        return self
 
     @classmethod
     def parse(cls, string, ext=False):
