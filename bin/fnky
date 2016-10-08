@@ -35,7 +35,7 @@ def count_families(tdb, path, opts):
     fdb = FDB.load(tdb, open(path))
     keys = []
     if opts.key_field:
-        keys = ['%s=%s' % (k, v) for k in opts.key_field for v in tdb.lexicon(k)]
+        keys = ['%s=%s' % (k, v) for k in opts.key_field for v in [''] + tdb.lexicon(k)]
     keys = (keys + (opts.key or [])) or list(fdb.keys(serialize=True))
     masks = ['' if m == '*' else m for m in opts.mask or ['']]
     family = fdb.family(masks)
