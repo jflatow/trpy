@@ -74,8 +74,8 @@ def trail(args, opts):
         tformat = tformatter(opts)
         if opts.header:
             print('%s\t%s\t%s' % ('cookie' if opts.cookie else 'id', 'time', tabify(fields)))
-        for id in opts.id or [0]:
-            id = int(id)
+        for i in opts.id or ['0']:
+            id = int(i) if i.isdigit() else tdb.cookie_id(i)
             cookie = tdb.cookie(id)
             for event in tdb.trail(id, expand=opts.expand):
                 print('%s\t%s\t%s' % (cookie, tformat(event.time), tabify(getattr(event, f) for f in fields)))

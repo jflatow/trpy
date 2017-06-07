@@ -23,7 +23,7 @@ def item_val(item):
 def hex_cookie(cookie):
     if isinstance(cookie, basestring):
         return cookie
-    return ffi.string(cookie, 16).encode('hex')
+    return ffi.buffer(cookie, 16)[:].encode('hex')
 
 def raw_cookie(cookie):
     if isinstance(cookie, basestring):
